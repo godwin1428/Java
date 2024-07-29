@@ -1,0 +1,34 @@
+public class ArraySum {
+
+    public static void main(String[] args) {
+        // Number of elements
+        int N = 5;
+
+        // Array with N elements
+        int[] numbers = {1, 2, 3, 4, 5};
+
+        // Check if N matches the length of the array
+        if (numbers.length != N) {
+            throw new IllegalArgumentException("Array size does not match the number of elements specified.");
+        }
+
+        // Calculate the sum of elements
+        try {
+            int sum = calculateSum(numbers, N);
+            System.out.println("Sum: " + sum);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("Exception: Array index is out of bounds.");
+        }
+    }
+
+    private static int calculateSum(int[] array, int N) {
+        int sum = 0;
+
+        // Iterate through the array to calculate the sum
+        for (int i = 0; i <= N; i++) {  // This will throw ArrayIndexOutOfBoundsException when i == N
+            sum += array[i];
+        }
+
+        return sum;
+    }
+}
