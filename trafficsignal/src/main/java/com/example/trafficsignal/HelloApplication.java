@@ -5,9 +5,13 @@ import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -21,20 +25,45 @@ public class HelloApplication extends Application {
     @Override
     public void start(Stage primaryStage) {
         // Create the traffic light circles
-        Circle redLight = new Circle(50, Color.RED);
-        Circle yellowLight = new Circle(50, Color.GRAY);
-        Circle greenLight = new Circle(50, Color.GRAY);
+        Circle redLight = createLight(Color.RED);
+        Circle yellowLight = createLight(Color.GRAY);
+        Circle greenLight = createLight(Color.GRAY);
+
+        // Create the traffic light container
+        Rectangle trafficLightContainer = new Rectangle(150, 400);
+        trafficLightContainer.setArcWidth(50);
+        trafficLightContainer.setArcHeight(50);
+        trafficLightContainer.setFill(Color.BLACK);
+
+        // Create the traffic light stand
+        Rectangle trafficLightStand = new Rectangle(20, 100);
+        trafficLightStand.setFill(Color.DARKGRAY);
+
+        // Stack the lights in a VBox
+        VBox lightBox = new VBox(10, redLight, yellowLight, greenLight);
+        lightBox.setStyle("-fx-alignment: center; -fx-padding: 20;");
+
+        // Stack the container, lights, and stand
+        StackPane trafficLight = new StackPane(trafficLightContainer, lightBox);
+        VBox trafficLightWithStand = new VBox(trafficLight, trafficLightStand);
+        trafficLightWithStand.setStyle("-fx-alignment: center;");
 
         // Create labels for optimization metrics
         Label timingsLabel = new Label();
+        timingsLabel.setStyle("-fx-background-color: lightblue; -fx-border-color: black; -fx-border-width: 2; -fx-padding: 10;");
         Label metricsLabel = new Label();
+        metricsLabel.setStyle("-fx-background-color: lightblue; -fx-border-color: black; -fx-border-width: 2; -fx-padding: 10;");
 
-        // Arrange the circles and labels in a vertical layout
-        VBox root = new VBox(10);
-        root.getChildren().addAll(redLight, yellowLight, greenLight, timingsLabel, metricsLabel);
+        // Arrange the labels side by side in an HBox
+        HBox reportBox = new HBox(20, timingsLabel, metricsLabel);
+        reportBox.setStyle("-fx-alignment: center;");
+
+        // Arrange the traffic light and labels in a vertical layout
+        VBox root = new VBox(20, trafficLightWithStand, reportBox);
+        root.setStyle("-fx-alignment: center; -fx-padding: 20; -fx-border-color: black; -fx-border-width: 3; -fx-background-color: white;");
 
         // Create the scene and set the stage
-        Scene scene = new Scene(root, 300, 600);
+        Scene scene = new Scene(root, 800, 600); // Increased width to accommodate side by side labels
         primaryStage.setTitle("Traffic Signal Animation and Optimization");
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -108,10 +137,17 @@ public class HelloApplication extends Application {
                 })
         );
 
-
         // Set the cycle count to indefinite to keep the animation running
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
+    }
+
+    // Create a traffic light circle
+    private Circle createLight(Paint color) {
+        Circle light = new Circle(50, color);
+        light.setStroke(Color.BLACK);
+        light.setStrokeWidth(2);
+        return light;
     }
 
     // Compute green times for each lane
@@ -236,5 +272,5 @@ public class HelloApplication extends Application {
 
     public static void main(String[] args) {
         launch(args);
-    }
+    }
 }
