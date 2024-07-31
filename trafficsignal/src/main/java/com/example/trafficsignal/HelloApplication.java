@@ -76,22 +76,32 @@ public class HelloApplication extends Application {
 
         // Create a timeline for the animation
         Timeline timeline = new Timeline(
+                // Initial state: Red light on
                 new KeyFrame(Duration.seconds(0), e -> {
                     redLight.setFill(Color.RED);
                     yellowLight.setFill(Color.GRAY);
                     greenLight.setFill(Color.GRAY);
                 }),
+                // Yellow light on after red
                 new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex]), e -> {
                     redLight.setFill(Color.GRAY);
                     yellowLight.setFill(Color.YELLOW);
                     greenLight.setFill(Color.GRAY);
                 }),
+                // Green light on after yellow
                 new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME), e -> {
                     redLight.setFill(Color.GRAY);
                     yellowLight.setFill(Color.GRAY);
                     greenLight.setFill(Color.GREEN);
                 }),
-                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME + redTimes[laneIndex]), e -> {
+                // Yellow light on after green
+                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME + greenTimes[laneIndex]), e -> {
+                    redLight.setFill(Color.GRAY);
+                    yellowLight.setFill(Color.YELLOW);
+                    greenLight.setFill(Color.GRAY);
+                }),
+                // Red light on after yellow
+                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME + greenTimes[laneIndex] + YELLOW_TIME), e -> {
                     redLight.setFill(Color.RED);
                     yellowLight.setFill(Color.GRAY);
                     greenLight.setFill(Color.GRAY);
