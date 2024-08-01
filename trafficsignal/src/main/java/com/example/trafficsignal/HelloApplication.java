@@ -4,7 +4,9 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -24,29 +26,16 @@ public class HelloApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Create the traffic light circles
-        Circle redLight = createLight(Color.RED);
-        Circle yellowLight = createLight(Color.GRAY);
-        Circle greenLight = createLight(Color.GRAY);
+        // Create four sets of traffic lights with directional names
+        VBox[] trafficLights = new VBox[4];
+        String[] directions = {"Northbound", "Southbound", "Eastbound", "Westbound"};
+        for (int i = 0; i < 4; i++) {
+            trafficLights[i] = createTrafficLight(directions[i]);
+        }
 
-        // Create the traffic light container
-        Rectangle trafficLightContainer = new Rectangle(150, 400);
-        trafficLightContainer.setArcWidth(50);
-        trafficLightContainer.setArcHeight(50);
-        trafficLightContainer.setFill(Color.BLACK);
-
-        // Create the traffic light stand
-        Rectangle trafficLightStand = new Rectangle(20, 100);
-        trafficLightStand.setFill(Color.DARKGRAY);
-
-        // Stack the lights in a VBox
-        VBox lightBox = new VBox(10, redLight, yellowLight, greenLight);
-        lightBox.setStyle("-fx-alignment: center; -fx-padding: 20;");
-
-        // Stack the container, lights, and stand
-        StackPane trafficLight = new StackPane(trafficLightContainer, lightBox);
-        VBox trafficLightWithStand = new VBox(trafficLight, trafficLightStand);
-        trafficLightWithStand.setStyle("-fx-alignment: center;");
+        // Arrange the four sets of traffic lights side by side in an HBox
+        HBox trafficLightsBox = new HBox(20, trafficLights);
+        trafficLightsBox.setStyle("-fx-alignment: center; -fx-padding: 20;");
 
         // Create labels for optimization metrics
         Label timingsLabel = new Label();
@@ -58,8 +47,17 @@ public class HelloApplication extends Application {
         HBox reportBox = new HBox(20, timingsLabel, metricsLabel);
         reportBox.setStyle("-fx-alignment: center;");
 
-        // Arrange the traffic light and labels in a vertical layout
-        VBox root = new VBox(20, trafficLightWithStand, reportBox);
+        // Create a bordered container to hold the labels without outer border
+        BorderPane borderPane = new BorderPane();
+        borderPane.setCenter(reportBox);
+        borderPane.setStyle("-fx-padding: 10;"); // Remove outer border
+
+        // Create a button to toggle visibility
+        Button toggleButton = new Button("Show/Hide Report");
+        toggleButton.setOnAction(e -> borderPane.setVisible(!borderPane.isVisible()));
+
+        // Arrange the traffic light, button, and bordered container in a VBox
+        VBox root = new VBox(20, trafficLightsBox, toggleButton, borderPane);
         root.setStyle("-fx-alignment: center; -fx-padding: 20; -fx-border-color: black; -fx-border-width: 3; -fx-background-color: white;");
 
         // Create the scene and set the stage
@@ -74,8 +72,7 @@ public class HelloApplication extends Application {
         double peakHourAdjustmentFactor = 1.2; // Adjust for peak hours (1.2 for peak hours, 1.0 otherwise)
         int pedestrianDemand = 10; // Number of pedestrians waiting to cross
 
-        // Compute optimized timings for the first lane only (e.g., Northbound)
-        int laneIndex = 0; // Index for the lane you want to display (0 = Northbound)
+        // Compute optimized timings for each lane
         int[] greenTimes = computeGreenTimes(queueLengths, totalVehicles, peakHourAdjustmentFactor);
         int[] redTimes = computeRedTimes(greenTimes);
         int pedestrianTime = computePedestrianTime(pedestrianDemand);
@@ -84,7 +81,7 @@ public class HelloApplication extends Application {
         int adjustedCycleTime = TOTAL_CYCLE_TIME - pedestrianTime;
         int[] adjustedGreenTimes = adjustGreenTimesForCycleTime(greenTimes, adjustedCycleTime);
 
-        // Metrics calculations for the selected lane
+        // Metrics calculations
         double averageTravelTimeBefore = computeAverageTravelTime(queueLengths, greenTimes);
         double averageTravelTimeAfter = computeAverageTravelTime(queueLengths, adjustedGreenTimes);
         double trafficFlowImprovement = computeTrafficFlowImprovement(averageTravelTimeBefore, averageTravelTimeAfter);
@@ -95,8 +92,8 @@ public class HelloApplication extends Application {
         double queueLengthAfter = computeTotalQueueLength(adjustedGreenTimes);
         double congestionReduction = computeCongestionReduction(queueLengthBefore, queueLengthAfter);
 
-        // Update labels with results for the selected lane
-        timingsLabel.setText(generateTimingsText(laneIndex, adjustedGreenTimes[laneIndex], redTimes[laneIndex], pedestrianTime));
+        // Update labels with results
+        timingsLabel.setText(generateTimingsText(adjustedGreenTimes, redTimes));
         metricsLabel.setText(generateMetricsText(
                 averageTravelTimeBefore, averageTravelTimeAfter,
                 trafficFlowImprovement, averageWaitTimeBefore, averageWaitTimeAfter,
@@ -104,42 +101,73 @@ public class HelloApplication extends Application {
         ));
 
         // Create a timeline for the animation
-        Timeline timeline = new Timeline(
-                // Initial state: Red light on
-                new KeyFrame(Duration.seconds(0), e -> {
-                    redLight.setFill(Color.RED);
-                    yellowLight.setFill(Color.GRAY);
-                    greenLight.setFill(Color.GRAY);
-                }),
-                // Yellow light on after red
-                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex]), e -> {
-                    redLight.setFill(Color.GRAY);
-                    yellowLight.setFill(Color.YELLOW);
-                    greenLight.setFill(Color.GRAY);
-                }),
-                // Green light on after yellow
-                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME), e -> {
-                    redLight.setFill(Color.GRAY);
-                    yellowLight.setFill(Color.GRAY);
-                    greenLight.setFill(Color.GREEN);
-                }),
-                // Yellow light on after green
-                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME + greenTimes[laneIndex]), e -> {
-                    redLight.setFill(Color.GRAY);
-                    yellowLight.setFill(Color.YELLOW);
-                    greenLight.setFill(Color.GRAY);
-                }),
-                // Red light on after yellow
-                new KeyFrame(Duration.seconds(adjustedGreenTimes[laneIndex] + YELLOW_TIME + greenTimes[laneIndex] + YELLOW_TIME), e -> {
-                    redLight.setFill(Color.RED);
-                    yellowLight.setFill(Color.GRAY);
-                    greenLight.setFill(Color.GRAY);
-                })
-        );
+        Timeline timeline = new Timeline();
+        int currentTime = 0;
+        for (int i = 0; i < 4; i++) {
+            int index = i;
+            // Initial state: All lights red
+            timeline.getKeyFrames().add(new KeyFrame(Duration.seconds(currentTime), e -> {
+                setTrafficLightState(trafficLights[index], false, false, true); // Set green for current lane
+                for (int j = 0; j < 4; j++) {
+                    if (j != index) {
+                        setTrafficLightState(trafficLights[j], true, false, false); // Set red for other lanes
+                    }
+                }
+            }));
+            currentTime += adjustedGreenTimes[i];
+            // Yellow light on after green
+            timeline.getKeyFrames().add(new KeyFrame(Duration.seconds(currentTime), e -> {
+                setTrafficLightState(trafficLights[index], false, true, false);
+            }));
+            currentTime += YELLOW_TIME;
+        }
+        // Red light on after yellow
+        timeline.getKeyFrames().add(new KeyFrame(Duration.seconds(currentTime), e -> {
+            for (VBox light : trafficLights) {
+                setTrafficLightState(light, true, false, false);
+            }
+        }));
 
         // Set the cycle count to indefinite to keep the animation running
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
+    }
+
+    // Create a traffic light VBox with directional name
+    private VBox createTrafficLight(String direction) {
+        
+        Circle redLight = createLight(Color.RED);
+        Circle yellowLight = createLight(Color.GRAY);
+        Circle greenLight = createLight(Color.GRAY);
+
+        Rectangle trafficLightContainer = new Rectangle(150, 400);
+        trafficLightContainer.setArcWidth(50);
+        trafficLightContainer.setArcHeight(50);
+        trafficLightContainer.setFill(Color.BLACK);
+
+        Rectangle trafficLightStand = new Rectangle(20, 100);
+        trafficLightStand.setFill(Color.DARKGRAY);
+
+        VBox lightBox = new VBox(10, redLight, yellowLight, greenLight);
+        lightBox.setStyle("-fx-alignment: center; -fx-padding: 20;");
+
+        Label directionLabel = new Label(direction);
+        directionLabel.setStyle("-fx-background-color: lightgray; -fx-padding: 5; -fx-border-color: black; -fx-border-width: 1;");
+
+        StackPane trafficLight = new StackPane(trafficLightContainer, lightBox);
+        VBox trafficLightWithStand = new VBox(directionLabel, trafficLight, trafficLightStand);
+        trafficLightWithStand.setStyle("-fx-alignment: center;");
+        return trafficLightWithStand;
+    }
+
+    // Set the state of a traffic light
+    private void setTrafficLightState(VBox trafficLight, boolean redOn, boolean yellowOn, boolean greenOn) {
+        Circle redLight = (Circle) ((VBox)((StackPane) trafficLight.getChildren().get(1)).getChildren().get(1)).getChildren().get(0);
+        Circle yellowLight = (Circle) ((VBox)((StackPane) trafficLight.getChildren().get(1)).getChildren().get(1)).getChildren().get(1);
+        Circle greenLight = (Circle) ((VBox)((StackPane) trafficLight.getChildren().get(1)).getChildren().get(1)).getChildren().get(2);
+        redLight.setFill(redOn ? Color.RED : Color.GRAY);
+        yellowLight.setFill(yellowOn ? Color.YELLOW : Color.GRAY);
+        greenLight.setFill(greenOn ? Color.GREEN : Color.GRAY);
     }
 
     // Create a traffic light circle
@@ -153,22 +181,22 @@ public class HelloApplication extends Application {
     // Compute green times for each lane
     public static int[] computeGreenTimes(int[] queueLengths, int totalVehicles, double peakHourAdjustmentFactor) {
         int[] greenTimes = new int[queueLengths.length];
-        int totalQueue = 0;
-
-        // Calculate total queue length
-        for (int queueLength : queueLengths) {
-            totalQueue += queueLength;
+        int totalQueueLength = 0;
+        for (int length : queueLengths) {
+            totalQueueLength += length;
         }
 
-        // Calculate green times
+        // Adjust total cycle time based on peak hour factor
+        int adjustedCycleTime = (int) (TOTAL_CYCLE_TIME * peakHourAdjustmentFactor);
+
         for (int i = 0; i < queueLengths.length; i++) {
-            greenTimes[i] = (int) ((queueLengths[i] * peakHourAdjustmentFactor / (double) totalQueue) * (TOTAL_CYCLE_TIME - YELLOW_TIME));
+            greenTimes[i] = (int) (((double) queueLengths[i] / totalQueueLength) * (adjustedCycleTime - YELLOW_TIME * queueLengths.length));
         }
 
         return greenTimes;
     }
 
-    // Compute red times based on green times and yellow time
+    // Compute red times for each lane
     public static int[] computeRedTimes(int[] greenTimes) {
         int[] redTimes = new int[greenTimes.length];
         for (int i = 0; i < greenTimes.length; i++) {
@@ -177,100 +205,96 @@ public class HelloApplication extends Application {
         return redTimes;
     }
 
-    // Compute pedestrian crossing time
+    // Compute pedestrian time
     public static int computePedestrianTime(int pedestrianDemand) {
         return pedestrianDemand * PEDESTRIAN_TIME_PER_PERSON;
     }
 
-    // Adjust green times based on the adjusted cycle time
+    // Adjust green times to fit within the adjusted cycle time
     public static int[] adjustGreenTimesForCycleTime(int[] greenTimes, int adjustedCycleTime) {
+        int totalGreenTime = 0;
+        for (int greenTime : greenTimes) {
+            totalGreenTime += greenTime;
+        }
+
         int[] adjustedGreenTimes = new int[greenTimes.length];
         for (int i = 0; i < greenTimes.length; i++) {
-            adjustedGreenTimes[i] = (int) ((greenTimes[i] / (double) (TOTAL_CYCLE_TIME - YELLOW_TIME)) * adjustedCycleTime);
+            adjustedGreenTimes[i] = (int) ((greenTimes[i] / (double) totalGreenTime) * adjustedCycleTime);
         }
         return adjustedGreenTimes;
     }
 
-    // Compute average travel time before and after optimization
+    // Compute average travel time for vehicles before optimization
     public static double computeAverageTravelTime(int[] queueLengths, int[] greenTimes) {
         double totalTravelTime = 0;
         for (int i = 0; i < queueLengths.length; i++) {
-            double travelTime = (double) queueLengths[i] / (greenTimes[i] / (double) TOTAL_CYCLE_TIME);
-            totalTravelTime += travelTime;
+            totalTravelTime += queueLengths[i] / (double) greenTimes[i];
         }
         return totalTravelTime / queueLengths.length;
     }
 
     // Compute traffic flow improvement
     public static double computeTrafficFlowImprovement(double averageTravelTimeBefore, double averageTravelTimeAfter) {
-        return (averageTravelTimeAfter - averageTravelTimeBefore) / averageTravelTimeBefore * 100;
+        return ((averageTravelTimeBefore - averageTravelTimeAfter) / averageTravelTimeBefore) * 100;
     }
 
-    // Compute average wait time
+    // Compute average wait time for vehicles before optimization
     public static double computeAverageWaitTime(int[] queueLengths, int[] greenTimes) {
         double totalWaitTime = 0;
         for (int i = 0; i < queueLengths.length; i++) {
-            double waitTime = (double) queueLengths[i] * TOTAL_CYCLE_TIME / (greenTimes[i] + YELLOW_TIME);
-            totalWaitTime += waitTime;
+            totalWaitTime += queueLengths[i] * greenTimes[i];
         }
         return totalWaitTime / queueLengths.length;
     }
 
     // Compute wait time reduction
     public static double computeWaitTimeReduction(double averageWaitTimeBefore, double averageWaitTimeAfter) {
-        return (averageWaitTimeBefore - averageWaitTimeAfter) / averageWaitTimeBefore * 100;
+        return ((averageWaitTimeBefore - averageWaitTimeAfter) / averageWaitTimeBefore) * 100;
     }
 
-    // Compute total queue length based on green times
+    // Compute total queue length after optimization
     public static double computeTotalQueueLength(int[] greenTimes) {
-        double totalQueue = 0;
+        double totalQueueLength = 0;
         for (int greenTime : greenTimes) {
-            totalQueue += TOTAL_CYCLE_TIME / (double) greenTime;
+            totalQueueLength += greenTime;
         }
-        return totalQueue;
+        return totalQueueLength;
     }
 
     // Compute congestion reduction
     public static double computeCongestionReduction(double queueLengthBefore, double queueLengthAfter) {
-        return (queueLengthBefore - queueLengthAfter) / queueLengthBefore * 100;
+        return ((queueLengthBefore - queueLengthAfter) / queueLengthBefore) * 100;
     }
 
-    // Generate text for timings for a specific lane
-    public static String generateTimingsText(int laneIndex, int greenTime, int redTime, int pedestrianTime) {
-        return String.format("Optimized Timings for Lane %d:\n" +
-                        "Red Time: %d seconds\n" +
-                        "Yellow Time: %d seconds\n" +
-                        "Green Time: %d seconds\n" +
-                        "Pedestrian Time: %d seconds\n",
-                laneIndex + 1, greenTime, YELLOW_TIME, redTime, pedestrianTime);
+    // Generate text for optimized timings for Lane 1 only
+    public static String generateTimingsText(int[] adjustedGreenTimes, int[] redTimes) {
+        StringBuilder timingsText = new StringBuilder("Intersection 1 Timings:\n");
+        timingsText.append(String.format("Green Time = %d s, Yellow Time = %d s, Red Time = %d s\n",
+                adjustedGreenTimes[0], YELLOW_TIME, redTimes[0]));
+        return timingsText.toString();
     }
 
-    // Generate text for metrics
-    public static String generateMetricsText(
-            double averageTravelTimeBefore, double averageTravelTimeAfter,
-            double trafficFlowImprovement, double averageWaitTimeBefore, double averageWaitTimeAfter,
-            double waitTimeReduction, double queueLengthBefore, double queueLengthAfter, double congestionReduction
-    ) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Traffic Optimization Report:\n");
-        sb.append("1. Traffic Flow Improvement:\n");
-        sb.append("   - Average Travel Time Before: ").append(String.format("%.2f", averageTravelTimeBefore)).append(" seconds\n");
-        sb.append("   - Average Travel Time After: ").append(String.format("%.2f", averageTravelTimeAfter)).append(" seconds\n");
-        sb.append("   - Flow Improvement: ").append(String.format("%.2f", trafficFlowImprovement)).append("%\n");
-
-        sb.append("2. Average Wait Time:\n");
-        sb.append("   - Average Wait Time Before: ").append(String.format("%.2f", averageWaitTimeBefore)).append(" seconds\n");
-        sb.append("   - Average Wait Time After: ").append(String.format("%.2f", averageWaitTimeAfter)).append(" seconds\n");
-        sb.append("   - Wait Time Reduction: ").append(String.format("%.2f", waitTimeReduction)).append("%\n");
-
-        sb.append("3. Overall Congestion Reduction:\n");
-        sb.append("   - Average Queue Length Before: ").append(String.format("%.2f", queueLengthBefore)).append(" vehicles\n");
-        sb.append("   - Average Queue Length After: ").append(String.format("%.2f", queueLengthAfter)).append(" vehicles\n");
-        sb.append("   - Queue Length Reduction: ").append(String.format("%.2f", congestionReduction)).append("%\n");
-        return sb.toString();
+    // Generate text for optimization metrics
+    public static String generateMetricsText(double averageTravelTimeBefore, double averageTravelTimeAfter,
+                                             double trafficFlowImprovement, double averageWaitTimeBefore, double averageWaitTimeAfter,
+                                             double waitTimeReduction, double queueLengthBefore, double queueLengthAfter,
+                                             double congestionReduction) {
+        return String.format(
+                        "Optimization Metrics:\n" +
+                        "Average Travel Time Before: %.2f s " +
+                        "Average Travel Time After: %.2f s " +
+                        "Traffic Flow Improvement: %.2f%% " +
+                        "Average Wait Time Before: %.2f s " +
+                        "Average Wait Time After: %.2f s " +
+                        "Wait Time Reduction: %.2f%%\n" +
+                        "Total Queue Length Before: %.2f\n" +
+                        "Total Queue Length After: %.2f" +
+                        "Congestion Reduction: %.2f%%",
+                averageTravelTimeBefore, averageTravelTimeAfter, trafficFlowImprovement, averageWaitTimeBefore,
+                averageWaitTimeAfter, waitTimeReduction, queueLengthBefore, queueLengthAfter, congestionReduction);
     }
 
     public static void main(String[] args) {
         launch(args);
-    }
+    }
 }
